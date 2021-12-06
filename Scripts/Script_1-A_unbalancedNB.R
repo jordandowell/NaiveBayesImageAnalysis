@@ -3,7 +3,8 @@
 #install as necessary
 library(e1071)
 library(ggplot2)
-
+library(png)
+library(klaR)
 # load the PNG into an RGB image object
 
 
