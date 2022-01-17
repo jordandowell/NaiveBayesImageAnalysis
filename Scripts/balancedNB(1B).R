@@ -271,7 +271,6 @@ DF.Image<-as.data.frame(Image,wide="c")
 #multiply by 255 *png are in percent 
 DF.Image[,3:5]<-DF.Image[,3:5] *255
 
-head(DF.Image)
 #converto to HSV
 DF.Image[,3:5] <- t(rgb2hsv(t(DF.Image[,3:5])))
 
@@ -280,11 +279,7 @@ colnames(DF.Image)<-c("x","y","R","G","B","GAMMA")
 
 pred <- predict(nb_mod, DF.Image,type="class")
 
-nb_mod$x
 
-dim(DF.Image)
-str(Image)
-head(DF.Image)
 
 
 
@@ -322,7 +317,7 @@ df.image <- data.frame(
 
 colnames(df.image)<-c("R","G","B")
 #convert to hsv
-dim(df.image)
+
 #converto to HSV
 DF.Image <- t(rgb2hsv(t(df.image)))
 colnames(DF.Image)<-c("R","G","B")
@@ -334,7 +329,7 @@ pred <- predict(nb_mod, DF.Image,type="class")
 
 
 
-dim(DF.Image)
+
 
 
 
@@ -356,7 +351,10 @@ colors <- data.frame(
 #this is to replace with mean colors we potenially can just multiply the posterior by 255 and take a weighted average 
 AVG.colors<-aggregate(.~label, data=colors, mean)
 #multiply by 255 for color 
-AVG.colors[,2:4]<-AVG.colors[,2:4]*255
+AVG.colors[,2:4]<-AVG.colors[,2:4]#*255
+
+colnames(AVG.colors)<- c("label", "red","green","blue")
+
 
 
 
@@ -364,78 +362,42 @@ AVG.colors[,2:4]<-AVG.colors[,2:4]*255
 # merge color codes on to df
 # IMPORTANT: we must maintain the original order of the df after the merge!
 df.image$order = 1:nrow(df.image)
-df.image.2 <- merge(df.image, AVG.colors, by="label")
-df.image.2 = df.image.2[order(df.image.2$order),]
-df.image.2$order = NULL
+df.image.2 <- cbind(df.image, colors)
+
+df.image.2 <- merge(df.image.2, AVG.colors, by="label")
 
 
 
-
-
+#print probability color
 # get mean color channel values for each row of the df.
 R = matrix(df.image.2$background, nrow=dim(mandrill)[1])
 G = matrix(df.image.2$leaf, nrow=dim(mandrill)[1])
 B = matrix(df.image.2$lesion, nrow=dim(mandrill)[1])
 
 # reconstitute the segmented image in the same shape as the input image
-mandrill.segmented = array(dim=dim(mandrill))
-mandrill.segmented[,,,1] = R
-mandrill.segmented[,,,2] = G
-mandrill.segmented[,,,3] = B
-# View the result
-grid.raster(mandrill.segmented)
-
-
-
-
-
-
-AVG.colors<- data.frame(
-  label = unique(pred$class), 
-  R = pred$posterior[,"background"],
-  G = pred$posterior[,"leaf"],
-  B = pred$posterior[,"lesion"]
-)
-
-
-# get mean color channel values for each row of the df.
-R <- matrix(colors$label, nrow=dim(mandrill)[1])
-G = matrix(df$G, nrow=dim(mandrill)[1])
-B = matrix(df$B, nrow=dim(mandrill)[1])
-
-#get average 
-
-
-mandrill.segmented = array(dim=c(dim(mandrill)[1],dim(mandrill)[2],dim(mandrill)[3],1))
-
+mandrill.segmented = array(dim=c(dim(mandrill)[1],dim(mandrill)[2],3))
 mandrill.segmented[,,1] = R
+mandrill.segmented[,,2] = G
+mandrill.segmented[,,3] = B
+# View the result
+png("OutputImages/ProbabilityColor.png")
+grid.raster(mandrill.segmented)
+dev.off()
 
 
-table(colors$label)
-dim(mandrill.segmented)
+#print labeled color
+# get mean color channel values for each row of the df.
+R = matrix(df.image.2$red, nrow=dim(mandrill)[1])
+G = matrix(df.image.2$green, nrow=dim(mandrill)[1])
+B = matrix(df.image.2$blue, nrow=dim(mandrill)[1])
 
-c(dim(mandrill)[1],dim(mandrill)[2],dim(mandrill)[3],1)
+# reconstitute the segmented image in the same shape as the input image
+mandrill.segmented = array(dim=c(dim(mandrill)[1],dim(mandrill)[2],3))
+mandrill.segmented[,,1] = R
+mandrill.segmented[,,2] = G
+mandrill.segmented[,,3] = B
+# View the result
+png("OutputImages/LabeledColor.png")
+grid.raster(mandrill.segmented)
+dev.off()
 
-
-# merge color codes on to df
-# IMPORTANT: we must maintain the original order of the df after the merge!
-DF.Image.labeled.order <- cbind(DF.Image.labeled,seq(1,nrow(DF.Image),1))
-
-
-
-DF.Image.colors <- merge(DF.Image.labeled.order)
-
-
-DF.Image <- DF.Image.colors[order(DF.Image.colors$V5),]
-DF.Image$V5 <- NULL
-
-
-#
-
-
-head(DF.Image)
-
-
-
-
-head(pred$posterior)
