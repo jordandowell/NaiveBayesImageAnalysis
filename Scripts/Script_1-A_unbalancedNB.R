@@ -7,6 +7,15 @@ library(png)
 library(klaR)
 # load the PNG into an RGB image object
 
+backgound<-read.csv("Inputdata/background.csv",header = FALSE, stringsAsFactors = FALSE, strip.white = TRUE)
+cbind(backgound, read.table(text = read.csv("Inputdata/background.csv"), sep = ","))
+
+View(background)
+
+
+colnames(background)<-c("R","G","B")
+
+
 
 Plant <- readPNG("InputImages/T1_C_leafnolesion.png")
 
@@ -101,6 +110,20 @@ dim(background_pixels)
 
 #create test and training data 
 
+
+
+background2<-background
+
+background == background2
+
+background$label<- "background"
+background2$label<- "background2"
+View(background2)
+
+
+fulldataset<-rbind(background,background2)
+View(fulldataset)
+
 set.seed(101) # Set Seed so that same sample can be reproduced in future also
 # Now Selecting 75% of data as sample from total 'n' rows of the data  
 sample.lesion <- sample.int(n = nrow(Lesion_pixels), size = floor(.75*nrow(Lesion_pixels)), replace = F)
@@ -116,9 +139,9 @@ test.leaf  <- LeafNoLesion_pixels[-sample.leaf, ]
 
 set.seed(101) # Set Seed so that same sample can be reproduced in future also
 # Now Selecting 75% of data as sample from total 'n' rows of the data  
-sample.background <- sample.int(n = nrow(background_pixels), size = floor(.75*nrow(background_pixels)), replace = F)
-train.background <- background_pixels[sample.background, ]
-test.background  <- background_pixels[-sample.background, ]
+sample.background <- sample.int(n = nrow(background), size = floor(.75*nrow(background)), replace = F)
+train.background <- background[sample.background, ]
+test.background  <- background[-sample.background, ]
 
 ############Combine lesion and leaf data
 
