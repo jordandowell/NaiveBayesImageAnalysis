@@ -262,7 +262,7 @@ par(opar)
 
 
 
-Image <- load.image('InputImages/T1_C_single.png')
+Image <- load.image('InputImages/Alex_60_19_S2_91_.png')
 
 #store as data.frame
 
@@ -280,52 +280,12 @@ colnames(DF.Image)<-c("x","y","R","G","B","GAMMA")
 pred <- predict(nb_mod, DF.Image,type="class")
 
 
-
+View(DF.Image)
 
 
 
 library("grid")
 library("gridExtra")
-mandrill<- Image
-### EX 1: show the full RGB image
-grid.raster(mandrill)
-### EX 2: show the B channel in gray scale representing pixel intensity
-grid.raster(mandrill[,,3])
-### EX 3: show the 3 channels in separate images
-# copy the image three times
-
-mandrill.R <- Image
-mandrill.G <- Image
-mandrill.B <- Image
-# zero out the non-contributing channels for each image copy
-mandrill.R[,,2:3] = 0
-mandrill.G[,,1]=0
-mandrill.G[,,3]=0
-mandrill.B[,,1:2]=0
-# build the image grid
-img1 <- rasterGrob(mandrill.R)
-img2 <- rasterGrob(mandrill.G)
-img3 <- rasterGrob(mandrill.B)
-grid.arrange(img1, img2, img3, nrow=1)
-
-# reshape image into a data frame
-df.image <- data.frame(
-  R=matrix(mandrill[,,1], ncol=1),
-  G=matrix(mandrill[,,2], ncol=1),
-  B=matrix(mandrill[,,3], ncol=1)
-)
-
-colnames(df.image)<-c("R","G","B")
-#convert to hsv
-
-#converto to HSV
-DF.Image <- t(rgb2hsv(t(df.image)))
-colnames(DF.Image)<-c("R","G","B")
-#naieve bayes
-pred <- predict(nb_mod, DF.Image,type="class")
-
-#getting errors of 0 probs and takes too long
-
 
 
 
@@ -335,7 +295,7 @@ pred <- predict(nb_mod, DF.Image,type="class")
 
 #add label to class
 DF.Image.labeled <- cbind(DF.Image,pred$class)
-colnames(DF.Image.labeled)<-c("R","G","B","label")
+colnames(DF.Image.labeled)<-c("x","y","R","G","B","GAMMA","label")
 
 
 
@@ -350,6 +310,7 @@ colors <- data.frame(
 
 #this is to replace with mean colors we potenially can just multiply the posterior by 255 and take a weighted average 
 AVG.colors<-aggregate(.~label, data=colors, mean)
+
 #multiply by 255 for color 
 AVG.colors[,2:4]<-AVG.colors[,2:4]#*255
 
@@ -358,46 +319,38 @@ colnames(AVG.colors)<- c("label", "red","green","blue")
 
 
 
-
 # merge color codes on to df
 # IMPORTANT: we must maintain the original order of the df after the merge!
-df.image$order = 1:nrow(df.image)
-df.image.2 <- cbind(df.image, colors)
-
-df.image.2 <- merge(df.image.2, AVG.colors, by="label")
+DF.Image.labeled$order = 1:nrow(DF.Image.labeled)
 
 
+DF.Image.labeled.2 <- merge(DF.Image.labeled, AVG.colors, by="label",all = TRUE, sort = FALSE)
+
+DF.Image.labeled.2 <- cbind(DF.Image.labeled.2, colors)
 
 #print probability color
-# get mean color channel values for each row of the df.
-R = matrix(df.image.2$background, nrow=dim(mandrill)[1])
-G = matrix(df.image.2$leaf, nrow=dim(mandrill)[1])
-B = matrix(df.image.2$lesion, nrow=dim(mandrill)[1])
+# get probability color channel values for each row of the df.
+R <- matrix(DF.Image.labeled.2$background, nrow=dim(Image)[2])
+G <- matrix(DF.Image.labeled.2$leaf, nrow=dim(Image)[2])
+B <- matrix(DF.Image.labeled.2$lesion, nrow=dim(Image)[2])
 
 # reconstitute the segmented image in the same shape as the input image
-mandrill.segmented = array(dim=c(dim(mandrill)[1],dim(mandrill)[2],3))
-mandrill.segmented[,,1] = R
-mandrill.segmented[,,2] = G
-mandrill.segmented[,,3] = B
-# View the result
+Image.segmented <- array(dim=c(dim(Image)[1],dim(Image)[2],3))
+Image.segmented[,,1] <- DF.Image.labeled.2$background
+Image.segmented[,,2] <- DF.Image.labeled.2$leaf
+Image.segmented[,,3] <- DF.Image.labeled.2$lesion
+# View the result 
+#this is the result you're using to infer if you need more sampling.
+
+#red = background, green = leaf, blue = lesion
+
 png("OutputImages/ProbabilityColor.png")
-grid.raster(mandrill.segmented)
+grid.raster(Image.segmented)
 dev.off()
 
 
-#print labeled color
-# get mean color channel values for each row of the df.
-R = matrix(df.image.2$red, nrow=dim(mandrill)[1])
-G = matrix(df.image.2$green, nrow=dim(mandrill)[1])
-B = matrix(df.image.2$blue, nrow=dim(mandrill)[1])
+#stop here !
 
-# reconstitute the segmented image in the same shape as the input image
-mandrill.segmented = array(dim=c(dim(mandrill)[1],dim(mandrill)[2],3))
-mandrill.segmented[,,1] = R
-mandrill.segmented[,,2] = G
-mandrill.segmented[,,3] = B
-# View the result
-png("OutputImages/LabeledColor.png")
-grid.raster(mandrill.segmented)
-dev.off()
+
+
 
