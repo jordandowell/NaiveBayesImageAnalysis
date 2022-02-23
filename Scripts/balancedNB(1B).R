@@ -258,7 +258,7 @@ par(opar)
 
 
 
-#import image
+#import image for single image analysis 
 
 
 
